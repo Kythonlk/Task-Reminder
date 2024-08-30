@@ -1,35 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Reminder List with Alarms</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-gray-100 p-8">
-  <div class="max-w-md mx-auto bg-white rounded-xl shadow-md overflow-hidden md:max-w-2xl">
-    <div class="p-8">
-      <h1 class="text-2xl font-bold mb-6">Reminder List with Alarms</h1>
-      <div id="currentTime" class="text-xl font-bold mb-4"></div>
+
+<body class="bg-gray-900 text-white p-4 sm:p-8">
+  <div class="max-w-md mx-auto bg-gray-800 rounded-xl shadow-md overflow-hidden">
+    <div class="p-6 sm:p-8">
+      <h1 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Reminder List with Alarms</h1>
       <div class="mb-4">
-        <input type="text" id="todoInput" placeholder="Enter a todo" class="w-full p-2 border rounded">
+        <input type="text" id="todoInput" placeholder="Enter a task"
+          class="w-full p-2 bg-gray-700 text-white border border-gray-600 rounded">
       </div>
       <div class="mb-4">
-        <input type="date" id="alarmDate" class="w-full p-2 border rounded">
+        <button onclick="addTodo()"
+          class="bg-green-500 text-white w-full sm:w-auto px-4 py-2 rounded hover:bg-green-600">Add Task</button>
       </div>
-      <div class="mb-4">
-        <input type="time" id="alarmTime" step="1" class="w-full p-2 border rounded">
-      </div>
-      <div class="mb-4">
-        <button onclick="addTodoWithAlarm()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Add
-          Todo with Alarm</button>
-      </div>
-      <div id="permissionStatus" class="mb-4 text-sm"></div>
-      <ul id="todoList" class="list-disc pl-5"></ul>
+      <ul id="todoList" class="list-none pl-0"></ul>
     </div>
   </div>
   <div class="text-center py-4">
-    <p>By <a href="https://github.com/kythonlk" target="_blank" class="text-gray-700 hover:text-blue-700">kythonlk</a></p>
+    <p>By <a href="https://github.com/kythonlk" target="_blank" class="text-gray-400 hover:text-blue-400">kythonlk</a>
+    </p>
   </div>
 
   <script src="./index.js"></script>

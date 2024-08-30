@@ -1,133 +1,151 @@
-let todos = JSON.parse(localStorage.getItem('todos')) || [];
-let alarms = {};
+document.addEventListener('DOMContentLoaded', loadTodos);
 
-function updateTime() {
-  const now = new Date();
-  const timeString = now.toLocaleTimeString('en-US', {
-    hour12: false,
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  });
-  document.getElementById('currentTime').textContent = timeString;
-}
-updateTime();
-setInterval(updateTime, 1000);
+function addTodo() {
+  const todoInput = document.getElementById('todoInput').value;
 
-function addTodoWithAlarm() {
-  const todoInput = document.getElementById('todoInput');
-  const alarmDate = document.getElementById('alarmDate');
-  const alarmTime = document.getElementById('alarmTime');
-
-  const todoText = todoInput.value.trim();
-  const alarmDateTime = new Date(alarmDate.value + 'T' + alarmTime.value);
-
-  if (todoText && !isNaN(alarmDateTime.getTime())) {
+  if (todoInput) {
     const todo = {
-      id: Date.now(),
-      text: todoText,
-      alarmTime: alarmDateTime.toISOString(),
-      completed: false
+      task: todoInput,
+      progress: []
     };
+
+    let todos = JSON.parse(localStorage.getItem('todos')) || [];
     todos.push(todo);
-    saveTodos();
-    renderTodos();
-    setAlarm(todo);
-
-    todoInput.value = '';
-    alarmDate.value = '';
-    alarmTime.value = '';
-  } else {
-    alert('Please enter a valid todo and alarm time.');
+    localStorage.setItem('todos', JSON.stringify(todos));
+    displayTodos();
   }
 }
 
-function setAlarm(todo) {
-  const now = new Date();
-  const alarmTime = new Date(todo.alarmTime);
-
-  if (alarmTime > now) {
-    const timeUntilAlarm = alarmTime.getTime() - now.getTime();
-    alarms[todo.id] = setTimeout(() => triggerAlarm(todo), timeUntilAlarm);
-  }
+function loadTodos() {
+  displayTodos();
 }
 
-function triggerAlarm(todo) {
-  playAlarmSound();
-  showNotification(todo);
-  delete alarms[todo.id];
-}
-
-function playAlarmSound() {
-  const alarmSound = new Audio('alarm.mp3');
-  alarmSound.play();
-}
-
-function showNotification(todo) {
-  if (Notification.permission === 'granted') {
-    new Notification('Todo Alarm', {
-      body: todo.text,
-    });
-  }
-}
-
-function toggleTodo(id) {
-  const todo = todos.find(t => t.id === id);
-  if (todo) {
-    todo.completed = !todo.completed;
-    saveTodos();
-    renderTodos();
-  }
-}
-
-function deleteTodo(id) {
-  todos = todos.filter(t => t.id !== id);
-  clearTimeout(alarms[id]);
-  delete alarms[id];
-  saveTodos();
-  renderTodos();
-}
-
-function saveTodos() {
-  localStorage.setItem('todos', JSON.stringify(todos));
-}
-
-function renderTodos() {
+function displayTodos() {
   const todoList = document.getElementById('todoList');
   todoList.innerHTML = '';
-  todos.forEach(todo => {
+
+  let todos = JSON.parse(localStorage.getItem('todos')) || [];
+
+  todos.forEach((todo, index) => {
     const li = document.createElement('li');
-    li.className = 'mb-2';
-    li.innerHTML = `
-      <span class="${todo.completed ? 'line-through' : ''}">${todo.text} (Alarm: ${new Date(todo.alarmTime).toLocaleString()})</span>
-      <button onclick="toggleTodo(${todo.id})" class="ml-2 text-sm bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600">Toggle</button>
-      <button onclick="deleteTodo(${todo.id})" class="ml-2 text-sm bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">Delete</button>
-    `;
+    li.className = 'mb-6';
+
+    const title = document.createElement('h3');
+    title.className = 'font-bold mb-2';
+    title.innerText = todo.task;
+    li.appendChild(title);
+
+    const progressInput = document.createElement('input');
+    progressInput.type = 'number';
+    progressInput.min = 0;
+    progressInput.max = 100;
+    progressInput.placeholder = 'Enter progress (%)';
+    progressInput.className = 'w-full p-2 bg-gray-700 text-white border border-gray-600 rounded mb-2';
+    progressInput.setAttribute('data-index', index);
+    li.appendChild(progressInput);
+
+    const saveButton = document.createElement('button');
+    saveButton.innerText = 'Save Progress';
+    saveButton.className = 'bg-blue-500 text-white w-full sm:w-auto px-4 py-2 rounded hover:bg-blue-600 mr-2';
+    saveButton.onclick = () => saveProgress(index, progressInput.value);
+    li.appendChild(saveButton);
+
+    const deleteButton = document.createElement('button');
+    deleteButton.innerText = 'Delete Task';
+    deleteButton.className = 'bg-red-500 text-white w-full sm:w-auto px-4 py-2 rounded hover:bg-red-600';
+    deleteButton.onclick = () => deleteTask(index);
+    li.appendChild(deleteButton);
+
+    const chartCanvas = document.createElement('canvas');
+    chartCanvas.id = `progressChart-${index}`;
+    chartCanvas.className = 'mt-4';
+    li.appendChild(chartCanvas);
+
     todoList.appendChild(li);
+
+    displayProgressChart(index, chartCanvas);
   });
 }
 
-function requestNotificationPermission() {
-  if (Notification.permission !== 'granted') {
-    Notification.requestPermission().then(function (permission) {
-      updatePermissionStatus();
-      if (permission === 'granted') {
-        console.log('Notification permission granted.');
-        todos.forEach(setAlarm); 
+function saveProgress(index, progress) {
+  let todos = JSON.parse(localStorage.getItem('todos')) || [];
+
+  if (progress && index >= 0 && index < todos.length) {
+    const inputDate = new Date().toLocaleDateString(); // Automatically use current date
+
+    let existingProgress = todos[index].progress.find(p => p.date === inputDate);
+
+    if (existingProgress) {
+      // Update existing progress
+      existingProgress.progress = parseInt(progress);
+    } else {
+      // Add new progress entry
+      todos[index].progress.push({
+        date: inputDate,
+        progress: parseInt(progress)
+      });
+    }
+
+    localStorage.setItem('todos', JSON.stringify(todos));
+    const chartCanvas = document.getElementById(`progressChart-${index}`);
+    displayProgressChart(index, chartCanvas);
+  }
+}
+
+function deleteTask(index) {
+  let todos = JSON.parse(localStorage.getItem('todos')) || [];
+
+  if (index >= 0 && index < todos.length) {
+    todos.splice(index, 1); // Remove the task from the array
+    localStorage.setItem('todos', JSON.stringify(todos)); // Update local storage
+    displayTodos(); // Refresh the displayed list
+  }
+}
+
+function displayProgressChart(index, chartCanvas) {
+  let todos = JSON.parse(localStorage.getItem('todos')) || [];
+
+  if (index >= 0 && index < todos.length) {
+    const todo = todos[index];
+    const labels = todo.progress.map(p => p.date);
+    const data = todo.progress.map(p => p.progress);
+
+    const backgroundColors = data.map((value, i) => {
+      if (i === 0 || value >= data[i - 1]) {
+        return 'rgba(75, 192, 192, 0.2)'; // Greenish background when progress is stable or increasing
+      } else {
+        return 'rgba(255, 99, 132, 0.2)'; // Red background when progress decreases
       }
     });
-  } else {
-    todos.forEach(setAlarm); 
+
+    const borderColors = data.map((value, i) => {
+      if (i === 0 || value >= data[i - 1]) {
+        return 'rgba(75, 192, 192, 1)'; // Greenish border when progress is stable or increasing
+      } else {
+        return 'rgba(255, 99, 132, 1)'; // Red border when progress decreases
+      }
+    });
+
+    new Chart(chartCanvas, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Progress (%)',
+          data: data,
+          borderColor: borderColors,
+          backgroundColor: backgroundColors,
+          fill: true,
+        }]
+      },
+      options: {
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 100
+          }
+        }
+      }
+    });
   }
-  updatePermissionStatus();
 }
-
-function updatePermissionStatus() {
-  const permissionStatus = document.getElementById('permissionStatus');
-  permissionStatus.textContent = `Notification permission: ${Notification.permission}`;
-}
-
-document.addEventListener('DOMContentLoaded', function () {
-  renderTodos();
-  requestNotificationPermission();
-});
